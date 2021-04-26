@@ -41,6 +41,10 @@ RSpec.describe 'Bulk Discount dashboard/index' do
     visit edit_merchant_bulk_discount_path(@merchant1, @discount_1)
   end
 
+  it 'has a form with default values that allows you to edit the bulk discounts' do
+    expect(find_field("Name").value).to eq(@discount_1.name)
+    expect(find_field("Percentage Discount").value).to eq("#{@discount_1.discount_percent}")
+    expect(find_field("Quantity Threshold").value).to eq("#{@discount_1.quantity_threshold}")
+  end
 
-  
 end
