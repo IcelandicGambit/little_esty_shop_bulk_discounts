@@ -47,4 +47,17 @@ RSpec.describe 'Bulk Discount dashboard/index' do
     expect(find_field("Quantity Threshold").value).to eq("#{@discount_1.quantity_threshold}")
   end
 
+  it 'can enter information into fields, submit and go to show page with updated information' do
+    fill_in "Name", with: "Cowboy's Discounts"
+    fill_in "Percentage Discount", with: 20
+    fill_in "Quantity Threshold", with: 5
+
+    click_on "Submit"
+
+    expect(current_path).to eq(merchant_bulk_discount_path(@merchant1, @discount_1))
+
+    expect(page).to have_content("Cowboy's Discounts")
+    expect(page).to have_content("20")
+    expect(page).to have_content("5")
+  end 
 end
