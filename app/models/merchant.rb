@@ -56,4 +56,24 @@ class Merchant < ApplicationRecord
     .created_at
     .to_date
   end
+
+  def self.total_revenue_by_merchant(merchant_id)
+    # returns invoice item id, the threshold it meets, and the bulkdiscount id
+    items_that_are_discounted = joins(:bulk_discounts, :invoice_items)
+      .where("invoice_items.quantity >= bulk_discounts.quantity_threshold AND merchants.id = ?", merchant_id)
+      .group("invoice_items.id")
+      .select("invoice_items.id, max(bulk_discounts.quantity_threshold) as threshold")
+
+    require "pry"; binding.pry 
+
+    discount_revenue = joins(:invoice_items, :bulk_discounts)
+      .where("invoice_items.id IN (?) AND merchants.id = ?", items_that_are_discounted.pluck("invoice_items.id").uniq, merchant_id) #strong params sanitation, sql injection
+      .select("SUM(invoice_items.quantity * invoice_items.unit_price * bulk_discounts.percentage_discount) as revenue")
+
+    normal_revenue = joins(:invoice_items)
+      .where("invoice_items.id NOT IN (?) AND merchants.id = ?", items_that_are_discounted.pluck("invoice_items.id").uniq, merchant_id) #strong params sanitation, sql injection
+      .select("SUM(invoice_items.quantity * invoice_items.unit_price) as revenue")
+
+    discount_revenue.to_a.first.revenue + normal_revenue.to_a.first.revenue
+  end
 end

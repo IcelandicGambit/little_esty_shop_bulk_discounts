@@ -61,3 +61,4 @@ RSpec.describe 'Bulk Discount dashboard/index' do
     expect(page).to have_content("5")
   end 
 end
+      
