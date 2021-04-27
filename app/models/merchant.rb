@@ -71,9 +71,29 @@ class Merchant < ApplicationRecord
       .select("SUM(invoice_items.quantity * invoice_items.unit_price * bulk_discounts.percentage_discount) as revenue")
 
     normal_revenue = joins(:invoice_items)
-      .where("invoice_items.id NOT IN (?) AND merchants.id = ?", items_that_are_discounted.pluck("invoice_items.id").uniq, merchant_id) #strong params sanitation, sql injection
+      .where("invoice_items.id NOT IN (?) AND merchants.id = ?", items_that_are_discounted.pluck("invoice_items.id").uniq, merchant_id)
       .select("SUM(invoice_items.quantity * invoice_items.unit_price) as revenue")
 
     discount_revenue.to_a.first.revenue + normal_revenue.to_a.first.revenue
   end
 end
+
+
+    # 10 * 5 = $50 -- $40
+    # 3 * 10 = $30 -- $27
+    # 1 * 100 = $100 - $100
+    
+    # - invoice_item_id: 1, quantity: 10 <-> quantity_threshold: 3, percentage_discount: .1 keep 
+    # - invoice_item_id: 1, quantity: 10 <-> quantity_threshold: 5, percentage_discount: .2 keep 
+
+    # - invoice_item_id: 2, quantity: 3 <-> quantity_threshold: 3, percentage_discount: .2 keep
+    # - invoice_item_id: 2, quantity: 3 <-> quantity_threshold: 5, percentage_discount: .2  
+    
+    # - invoice_item_id: 3, quantity: 1 <-> quantity_threshold: 3, percentage_discount: .2 
+    # - invoice_item_id: 3, quantity: 1 <-> quantity_threshold: 5, percentage_discount: .2
+    
+    # - invoice_item_id: 4, quantity: 10 <-> quantity_threshold: 3, percentage_discount: .2 not belonging to our merchant  -- filter it out on rails associations (where merchant = merchant1)
+    # - invoice_item_id: 4, quantity: 10 <-> quantity_threshold: 5, percentage_discount: .2  
+    
+    # - group by item_id
+    # - select max of the quantity_threshold, compute the discount based on quantity * percentage discount 
