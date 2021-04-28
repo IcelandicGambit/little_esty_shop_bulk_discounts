@@ -15,4 +15,4 @@
 @discount_b = BulkDiscount.create!(id: 21, merchant: @merchant_a, name: "Discount B", quantity_threshold: 5, percentage_discount: 0.2)
 @discount_b = BulkDiscount.create!(id: 22, merchant: @merchant_a, name: "Discount B", quantity_threshold: 100, percentage_discount: 0.5)
 
-@transaction_a = Transaction.create!(credit_card_number: 13374206980085, result: :success, invoice: @invoice_a)
+@transaction_a = Transaction.create!(credit_card_number: 11111111111111, result: :success, invoice: @invoice_a)

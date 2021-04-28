@@ -75,7 +75,7 @@ RSpec.describe 'invoices show' do
     @discount_a = BulkDiscount.create!(merchant: @merchant_a, name: "Discount A", quantity_threshold: 3, percentage_discount: 0.1)
     @discount_b = BulkDiscount.create!(merchant: @merchant_a, name: "Discount B", quantity_threshold: 5, percentage_discount: 0.2)
 
-    @transaction_a = Transaction.create!(credit_card_number: 13374206980085, result: :success, invoice: @invoice_a)
+    @transaction_a = Transaction.create!(credit_card_number: 11111111111111, result: :success, invoice: @invoice_a)
 
     # 10 * 5 = $50 -- $40
     # 3 * 10 = $30 -- $27
