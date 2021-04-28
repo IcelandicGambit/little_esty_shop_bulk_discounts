@@ -59,29 +59,69 @@ class Merchant < ApplicationRecord
 
   def self.total_revenue_by_merchant(merchant_id)
     # returns invoice item id, the threshold it meets, and the bulkdiscount id
-    items_that_are_discounted = joins(:bulk_discounts, :invoice_items)
-      .where("invoice_items.quantity >= bulk_discounts.quantity_threshold AND merchants.id = ?", merchant_id)
-      .group("invoice_items.id")
-      .select("invoice_items.id, max(bulk_discounts.quantity_threshold) as threshold")
+    # items_that_are_discounted = joins(:bulk_discounts, :invoice_items)
+    #   .where("invoice_items.quantity >= bulk_discounts.quantity_threshold AND merchants.id = ?", merchant_id)
+    #   .group("invoice_items.id")
+    #   .select("invoice_items.id, max(bulk_discounts.quantity_threshold) as threshold")  
 
-    require "pry"; binding.pry 
+    # discount_revenue = joins(:invoice_items, :bulk_discounts)
+    #   .where("invoice_items.id IN (?) AND merchants.id = ?", items_that_are_discounted.pluck("invoice_items.id").uniq, merchant_id) #strong params sanitation, sql injection
+    #   .select("SUM(invoice_items.quantity * invoice_items.unit_price * bulk_discounts.percentage_discount) as revenue")
 
-    discount_revenue = joins(:invoice_items, :bulk_discounts)
-      .where("invoice_items.id IN (?) AND merchants.id = ?", items_that_are_discounted.pluck("invoice_items.id").uniq, merchant_id) #strong params sanitation, sql injection
-      .select("SUM(invoice_items.quantity * invoice_items.unit_price * bulk_discounts.percentage_discount) as revenue")
+    # normal_revenue = joins(:invoice_items)
+    #   .where("invoice_items.id NOT IN (?) AND merchants.id = ?", items_that_are_discounted.pluck("invoice_items.id").uniq, merchant_id)
+    #   .select("SUM(invoice_items.quantity * invoice_items.unit_price) as revenue")
 
-    normal_revenue = joins(:invoice_items)
-      .where("invoice_items.id NOT IN (?) AND merchants.id = ?", items_that_are_discounted.pluck("invoice_items.id").uniq, merchant_id)
-      .select("SUM(invoice_items.quantity * invoice_items.unit_price) as revenue")
+    # discount_revenue.to_a.first.revenue + normal_revenue.to_a.first.revenue
 
-    discount_revenue.to_a.first.revenue + normal_revenue.to_a.first.revenue
+    # Find discounts for qualifying items
+    find_discount_by_item = joins(:invoice_items, :bulk_discounts)
+      .where('invoice_items.quantity >= bulk_discounts.quantity_threshold AND merchants.id = ?', merchant_id)
+      .select("invoice_items.id as ii_id, 
+        bulk_discounts.quantity_threshold, 
+        bulk_discounts.percentage_discount,
+        invoice_items.unit_price, 
+        invoice_items.quantity")
+
+        # @ii_1 = InvoiceItem.create!(id: 10, invoice: @invoice_a, item: @item_a, quantity: 10, unit_price: 5, status: :shipped)
+        # item 3, 5, 100
+        # 
+
+
+    # Determine the best discount for each customer 
+    max_discount_so_far = {}
+    find_discount_by_item.each do |item| 
+      if max_discount_so_far.key? item.ii_id and item.percentage_discount > max_discount_so_far[item.ii_id].percentage_discount
+        max_discount_so_far[item.ii_id] = item
+      else
+        max_discount_so_far[item.ii_id] = item
+      end
+    end
+
+    #each item is an active record, each item id is put in the db, compared to the first id. If id is the same, compare discount percentage and take higher.
+
+    # Determine the revenue for the best discount for each invoice item id (ii_id)
+    total_discount_revenue = 0 
+    total_discount_revenue = max_discount_so_far.inject(0) do |accumulator, (key, item)|
+      accumulator += (item.unit_price * item.quantity * (1 - item.percentage_discount))
+    end
+
+    # Determine the revenue for non-discounted items. Goes through keys array and eliminates invoice items in discounted hash.
+    total_non_discounted_revenue = joins(:invoice_items)
+      .where("invoice_items.id NOT IN (?)", max_discount_so_far.keys)
+      .where("merchant_id = ?", merchant_id)
+      .sum("invoice_items.unit_price * invoice_items.quantity")
+
+    (total_discount_revenue + total_non_discounted_revenue).round(2)
   end
 end
 
-
+  # differences between 1 and 2, similarities. possible to write one query at the exclusion of the other. possible helper methods in refactor. use distinct instead of uniq ACTIVE RECORD
+  # lines 71 and 75 could be rolled into 1 query. 
     # 10 * 5 = $50 -- $40
     # 3 * 10 = $30 -- $27
     # 1 * 100 = $100 - $100
+    # total = $167
     
     # - invoice_item_id: 1, quantity: 10 <-> quantity_threshold: 3, percentage_discount: .1 keep 
     # - invoice_item_id: 1, quantity: 10 <-> quantity_threshold: 5, percentage_discount: .2 keep 

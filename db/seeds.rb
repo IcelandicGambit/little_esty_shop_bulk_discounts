@@ -13,5 +13,6 @@
 @ii_4 = InvoiceItem.create!(id: 13, invoice: @invoice_a, item: @item_d, quantity: 10, unit_price: 10, status: :pending)
 @discount_a = BulkDiscount.create!(id: 20, merchant: @merchant_a, name: "Discount A", quantity_threshold: 3, percentage_discount: 0.1)
 @discount_b = BulkDiscount.create!(id: 21, merchant: @merchant_a, name: "Discount B", quantity_threshold: 5, percentage_discount: 0.2)
+@discount_b = BulkDiscount.create!(id: 22, merchant: @merchant_a, name: "Discount B", quantity_threshold: 100, percentage_discount: 0.5)
 
 @transaction_a = Transaction.create!(credit_card_number: 13374206980085, result: :success, invoice: @invoice_a)
