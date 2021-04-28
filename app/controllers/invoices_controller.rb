@@ -9,6 +9,13 @@ class InvoicesController < ApplicationController
   def show
     @customer = @invoice.customer
     @invoice_item = InvoiceItem.where(invoice_id: params[:id]).first
+    @total_revenue = Merchant.total_revenue_by_merchant(params[:merchant_id])
+    @applied_discounts = {}
+    @invoice_item.invoice_items.each do |item|
+      # If it finds a bulk discount, it will set the BulkDiscount active record in applied discounts
+      # Otherwise, it will default to nil
+      @applied_discounts[item] = BulkDiscount.determine_discount_applied(item)
+    end
   end
 
   def update
