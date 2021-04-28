@@ -21,6 +21,7 @@ class BulkDiscount < ApplicationRecord
       joins(:invoice_items)
       .where("invoice_items.quantity >= bulk_discounts.quantity_threshold")
       .where("bulk_discounts.id IN (?)", merchant_discounts_ids)
+      .distinct
 
     # No discount was applied/doesnt meet threshold
     if possible_discounts.size == 0
@@ -35,7 +36,6 @@ class BulkDiscount < ApplicationRecord
         best_discount = item 
       end
     end
-
     best_discount
   end
 end
